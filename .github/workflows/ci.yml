@@ -28,6 +28,9 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      - name: Installation of goose for migrations
+        run: go install github.com/pressly/goose/v3/cmd/goose@latest
+
       - name: Run Migrations
         run: cd dbScripts/migration && make migrateup
 
