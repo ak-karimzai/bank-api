@@ -1,0 +1,11 @@
+version: "1"
+packages:
+    - name: db
+      path: "internal/db"
+      queries: "./dbScripts/query"
+      schema: "./dbScripts/migration"
+      engine: "postgresql"
+      emit_json_tags: true
+      emit_prepared_queries: false
+      emit_interface: true
+      emit_exact_table_names: false
