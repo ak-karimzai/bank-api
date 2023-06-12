@@ -17,4 +17,4 @@ migrateup:
 migratedown:
 	goose postgres postgres://${username}:${password}@${host}:${port}/${dbname} down
 
-.PHONY: createdb 
+.PHONY: createdb dropdb migrateup migratedown

@@ -15,6 +15,7 @@ type Currency string
 const (
 	CurrencyUSD Currency = "USD"
 	CurrencyEUR Currency = "EUR"
+	CurrencyRUB Currency = "RUB"
 )
 
 func (e *Currency) Scan(src interface{}) error {
@@ -75,4 +76,13 @@ type Transfer struct {
 	// must be postive
 	Amount    int64     `json:"amount"`
 	CreatedAt time.Time `json:"created_at"`
+}
+
+type User struct {
+	Username            string    `json:"username"`
+	HashedPassword      string    `json:"hashed_password"`
+	Fullname            string    `json:"fullname"`
+	Email               string    `json:"email"`
+	PasswordLastChanged time.Time `json:"password_last_changed"`
+	CreatedAt           time.Time `json:"created_at"`
 }

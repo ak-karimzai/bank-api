@@ -1,7 +1,8 @@
 -- +goose Up
 CREATE TYPE "currency" AS ENUM (
   'USD',
-  'EUR'
+  'EUR',
+  'RUB'
 );
 
 CREATE TABLE "accounts" (
