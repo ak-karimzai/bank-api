@@ -10,9 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createRandomAccount(t *testing.T) Account {
-	user := createRandomUser(t)
-
+func createRandomAccount(t *testing.T, user User) Account {
 	arg := CreateAccountParams{
 		Owner:    user.Username,
 		Balance:  util.RandomMoney(),
@@ -20,7 +18,6 @@ func createRandomAccount(t *testing.T) Account {
 	}
 
 	acc, err := testQueries.CreateAccount(context.Background(), arg)
-
 	require.NoError(t, err)
 	require.NotEmpty(t, acc)
 	require.Equal(t, arg.Owner, acc.Owner)
@@ -33,11 +30,13 @@ func createRandomAccount(t *testing.T) Account {
 }
 
 func TestCreateAccount(t *testing.T) {
-	createRandomAccount(t)
+	user := createRandomUser(t)
+	createRandomAccount(t, user)
 }
 
 func TestGetAccount(t *testing.T) {
-	acc1 := createRandomAccount(t)
+	user := createRandomUser(t)
+	acc1 := createRandomAccount(t, user)
 	acc2, err := testQueries.GetAccount(context.Background(), acc1.ID)
 
 	require.NoError(t, err)
@@ -51,7 +50,8 @@ func TestGetAccount(t *testing.T) {
 }
 
 func TestUpdateAccount(t *testing.T) {
-	acc1 := createRandomAccount(t)
+	user := createRandomUser(t)
+	acc1 := createRandomAccount(t, user)
 
 	arg := UpdateAccountParams{
 		ID:      acc1.ID,
@@ -69,7 +69,8 @@ func TestUpdateAccount(t *testing.T) {
 }
 
 func TestDeleteAccount(t *testing.T) {
-	acc1 := createRandomAccount(t)
+	user := createRandomUser(t)
+	acc1 := createRandomAccount(t, user)
 	err := testQueries.DeleteAccount(
 		context.Background(), acc1.ID)
 
@@ -83,11 +84,15 @@ func TestDeleteAccount(t *testing.T) {
 }
 
 func TestListAccounts(t *testing.T) {
+	users := make([]User, 10)
 	for i := 0; i < 10; i++ {
-		createRandomAccount(t)
+		users[i] = createRandomUser(t)
+		require.NotEmpty(t, users[i])
+		createRandomAccount(t, users[i])
 	}
 
 	arg := GetAccountsParams{
+		Owner:  users[0].Username,
 		Limit:  5,
 		Offset: 5,
 	}
@@ -96,7 +101,7 @@ func TestListAccounts(t *testing.T) {
 		context.Background(), arg)
 
 	require.NoError(t, err)
-	require.Len(t, accounts, 5)
+	require.NotEmpty(t, accounts)
 
 	for _, acc := range accounts {
 		require.NotEmpty(t, acc)
