@@ -7,7 +7,7 @@ RETURNING *;
 SELECT * FROM transfers
 WHERE id = $1;
 
--- name: GetTransfers :many
+-- name: ListTransfers :many
 SELECT * FROM transfers
 WHERE "from_account_id" = $1
 AND "to_account_id" = $2

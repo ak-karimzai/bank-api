@@ -2,16 +2,18 @@ package db
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
+
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type Store struct {
 	*Queries
-	db *sql.DB
+	db *pgxpool.Pool
 }
 
-func NewStore(db *sql.DB) *Store {
+func NewStore(db *pgxpool.Pool) *Store {
 	return &Store{
 		db:      db,
 		Queries: New(db),
@@ -20,7 +22,7 @@ func NewStore(db *sql.DB) *Store {
 
 func (store *Store) execTx(
 	ctx context.Context, fn func(*Queries) error) error {
-	tx, err := store.db.BeginTx(ctx, nil)
+	tx, err := store.db.BeginTx(ctx, pgx.TxOptions{})
 	if err != nil {
 		return err
 	}
@@ -28,12 +30,13 @@ func (store *Store) execTx(
 	q := New(tx)
 	err = fn(q)
 	if err != nil {
-		if rbErr := tx.Rollback(); rbErr != nil {
+		if rbErr := tx.Rollback(ctx); rbErr != nil {
 			return fmt.Errorf("tx err: %v, rb err: %v", err, rbErr)
 		}
 		return err
 	}
-	return tx.Commit()
+
+	return tx.Commit(ctx)
 }
 
 type TransferTxParams struct {
@@ -50,8 +53,8 @@ type TransferTxResult struct {
 	ToEntry     Entry    `json:"to_entry"`
 }
 
-func (store *Store) TransferTx(ctx context.Context,
-	arg TransferTxParams) (TransferTxResult, error) {
+func (store *Store) TransferTx(
+	ctx context.Context, arg TransferTxParams) (TransferTxResult, error) {
 	var result TransferTxResult
 
 	err := store.execTx(ctx, func(q *Queries) error {
@@ -82,41 +85,22 @@ func (store *Store) TransferTx(ctx context.Context,
 			return err
 		}
 
-		// to defend from deadlock
 		if arg.FromAccountID < arg.ToAccountID {
-			result.FromAccount, result.ToAccount, err =
-				addMoney(ctx,
-					q,
-					arg.FromAccountID,
-					-arg.Amount,
-					arg.ToAccountID,
-					arg.Amount)
-			if err != nil {
-				return err
-			}
+			result.FromAccount, result.ToAccount, err = addMoney(
+				ctx, q, arg.FromAccountID, -arg.Amount, arg.ToAccountID, arg.Amount)
 		} else {
-			result.ToAccount, result.FromAccount, err =
-				addMoney(ctx,
-					q,
-					arg.ToAccountID,
-					arg.Amount,
-					arg.FromAccountID,
-					-arg.Amount)
-			if err != nil {
-				return err
-			}
+			result.FromAccount, result.ToAccount, err = addMoney(
+				ctx, q, arg.ToAccountID, arg.Amount, arg.FromAccountID, -arg.Amount)
 		}
-		return nil
+		return err
 	})
-
 	return result, err
 }
 
-func addMoney(
-	ctx context.Context, q *Queries, accID1, amount1, accID2, amount2 int64) (
-	acc1 Account, acc2 Account, err error) {
+func addMoney(ctx context.Context,
+	q *Queries, accId1, amount1, accId2, amount2 int64) (acc1, acc2 Account, err error) {
 	acc1, err = q.AddAccountBalance(ctx, AddAccountBalanceParams{
-		ID:     accID1,
+		ID:     accId1,
 		Amount: amount1,
 	})
 	if err != nil {
@@ -124,12 +108,11 @@ func addMoney(
 	}
 
 	acc2, err = q.AddAccountBalance(ctx, AddAccountBalanceParams{
-		ID:     accID2,
+		ID:     accId2,
 		Amount: amount2,
 	})
 	if err != nil {
 		return
 	}
-
 	return
 }
