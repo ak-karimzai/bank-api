@@ -100,6 +100,6 @@ func TestListAccounts(t *testing.T) {
 	require.Len(t, accounts, 5)
 
 	for _, account := range accounts {
-		require.NotEmpty(t, account)
+		require.NotZero(t, account.ID)
 	}
 }
