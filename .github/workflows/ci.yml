@@ -13,10 +13,10 @@ jobs:
 
     services:
       postgres:
-        image: postgres:14
+        image: postgres:14-alpine
         env:
           POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: test
+          POSTGRES_DB: bank-api
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -37,7 +37,7 @@ jobs:
         run: go install github.com/pressly/goose/v3/cmd/goose@latest
 
       - name: Run Migrations
-        run: cd dbScripts/migration && make migrateup
+        run: make migrate_up
 
       - name: Test
         run: make test

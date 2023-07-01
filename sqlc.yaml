@@ -1,11 +1,14 @@
-version: "1"
-packages:
-    - name: db
-      path: "internal/db"
-      queries: "./dbScripts/query"
-      schema: "./dbScripts/migration"
-      engine: "postgresql"
-      emit_json_tags: true
-      emit_prepared_queries: false
-      emit_interface: true
-      emit_exact_table_names: false
+version: "2"
+sql:
+  - engine: "postgresql"
+    queries: "./db/query"
+    schema: "./db/migration"
+    gen:
+      go:
+        package: "db"
+        sql_package: "pgx/v5"
+        out: "./internel/db"
+        emit_json_tags: true
+        emit_prepared_queries: true
+        emit_interface: false
+        emit_exact_table_names: false
