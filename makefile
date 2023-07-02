@@ -44,4 +44,10 @@ sqlc:
 test:
 	go test -v -cover ./...
 
-.PHONY: postgres createdb dropdb migrate_up migrate_down create_migrate_file sqlc test
+server:
+	go run cmd/web/main.go
+
+mock:
+	mockgen -package mockdb -destination=internel/db/mock/store.go github.com/ak-karimzai/bank-api/internel/db Store
+
+.PHONY: postgres createdb dropdb migrate_up migrate_down create_migrate_file sqlc test server
