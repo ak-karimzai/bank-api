@@ -1,10 +1,11 @@
 package handlers
 
 import (
-	"database/sql"
+	"errors"
 	"net/http"
 
 	"github.com/ak-karimzai/bank-api/internel/db"
+	"github.com/ak-karimzai/bank-api/internel/middlewares"
 	"github.com/ak-karimzai/bank-api/internel/repository"
 	"github.com/gin-gonic/gin"
 )
@@ -21,7 +22,7 @@ func NewAccountHandler(accountRepo repository.AccountRepository) *AccountHandler
 
 type CreateAccountReq struct {
 	Owner    string      `json:"owner" binding:"required"`
-	Currency db.Currency `json:"currency" binding:"required,oneof=EUR USD RUB"`
+	Currency db.Currency `json:"currency" binding:"required"`
 }
 
 func (accHandler *AccountHandler) CreateAccount(ctx *gin.Context) {
@@ -38,8 +39,8 @@ func (accHandler *AccountHandler) CreateAccount(ctx *gin.Context) {
 	}
 	acc, err := accHandler.accountRepo.CreateAccount(ctx, arg)
 	if err != nil {
-		ctx.JSON(
-			http.StatusInternalServerError, errResponse(err))
+		finalErr := dbErrorHandler(err)
+		ctx.JSON(finalErr.Status, finalErr)
 		return
 	}
 
@@ -57,15 +58,20 @@ func (accHandler *AccountHandler) GetAccount(ctx *gin.Context) {
 		return
 	}
 
+	payload := middlewares.GetPayload(ctx)
 	acc, err := accHandler.accountRepo.GetAccount(ctx, req.ID)
 	if err != nil {
-		statusCode := http.StatusInternalServerError
-		if err == sql.ErrNoRows {
-			statusCode = http.StatusNotFound
-		}
-		ctx.JSON(statusCode, errResponse(err))
+		finalErr := dbErrorHandler(err)
+		ctx.JSON(finalErr.Status, finalErr)
 		return
 	}
+
+	if acc.Owner != payload.Username {
+		err := errors.New("account doesn't  belong to the authenticated user")
+		ctx.JSON(http.StatusUnauthorized, errResponse(err))
+		return
+	}
+
 	ctx.JSON(http.StatusOK, acc)
 }
 
@@ -81,18 +87,17 @@ func (accHandler *AccountHandler) ListAccounts(ctx *gin.Context) {
 		return
 	}
 
+	payload := middlewares.GetPayload(ctx)
 	arg := db.ListAccountsParams{
 		Limit:  req.PageSize,
 		Offset: (req.PageID - 1) * req.PageSize,
+		Owner:  payload.Username,
 	}
 
 	acc, err := accHandler.accountRepo.ListAccounts(ctx, arg)
 	if err != nil {
-		statusCode := http.StatusInternalServerError
-		if err == sql.ErrNoRows {
-			statusCode = http.StatusNotFound
-		}
-		ctx.JSON(statusCode, errResponse(err))
+		finalErr := dbErrorHandler(err)
+		ctx.JSON(finalErr.Status, finalErr)
 		return
 	}
 	ctx.JSON(http.StatusOK, acc)

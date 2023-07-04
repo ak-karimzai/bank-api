@@ -4,14 +4,16 @@ import (
 	"context"
 	"testing"
 
+	"github.com/ak-karimzai/bank-api/internel/util"
 	"github.com/stretchr/testify/require"
 )
 
 func TestTransferTx(t *testing.T) {
 	store := NewStore(testDb)
 
-	acc1 := createRandomAccount(t)
-	acc2 := createRandomAccount(t)
+	currency := util.RandomCurrency()
+	acc1 := createRandomAccount(t, currency)
+	acc2 := createRandomAccount(t, currency)
 
 	n := 5
 	amount := int64(10)
@@ -23,6 +25,7 @@ func TestTransferTx(t *testing.T) {
 				FromAccountID: acc1.ID,
 				ToAccountID:   acc2.ID,
 				Amount:        int64(amount),
+				Username:      acc1.Owner,
 			})
 			errChan <- err
 			results <- result
@@ -103,8 +106,9 @@ func TestTransferTx(t *testing.T) {
 func TestTransferTxDeadlock(t *testing.T) {
 	store := NewStore(testDb)
 
-	acc1 := createRandomAccount(t)
-	acc2 := createRandomAccount(t)
+	currency := util.RandomCurrency()
+	acc1 := createRandomAccount(t, currency)
+	acc2 := createRandomAccount(t, currency)
 
 	n := 10
 	amount := int64(10)
@@ -121,6 +125,7 @@ func TestTransferTxDeadlock(t *testing.T) {
 				FromAccountID: acc1Id,
 				ToAccountID:   acc2Id,
 				Amount:        int64(amount),
+				Username:      acc1.Owner,
 			})
 			errChan <- err
 		}()

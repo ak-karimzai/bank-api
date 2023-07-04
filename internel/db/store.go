@@ -2,6 +2,7 @@ package db
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/jackc/pgx/v5"
@@ -45,9 +46,10 @@ func (store *SQLStore) execTx(
 }
 
 type TransferTxParams struct {
-	FromAccountID int64 `json:"from_account_id"`
-	ToAccountID   int64 `json:"to_account_id"`
-	Amount        int64 `json:"amount"`
+	FromAccountID int64  `json:"from_account_id"`
+	ToAccountID   int64  `json:"to_account_id"`
+	Amount        int64  `json:"amount"`
+	Username      string `json:"sender_username"`
 }
 
 type TransferTxResult struct {
@@ -63,7 +65,25 @@ func (store *SQLStore) TransferTx(
 	var result TransferTxResult
 
 	err := store.execTx(ctx, func(q *Queries) error {
-		var err error
+		acc1, err := store.GetAccount(ctx, arg.FromAccountID)
+		if err != nil {
+			return err
+		}
+
+		acc2, err := store.GetAccount(ctx, arg.ToAccountID)
+		if err != nil {
+			return err
+		}
+
+		if err = validTransaction(&acc1, &arg); err != nil {
+			return err
+		}
+
+		if acc1.Currency != acc2.Currency {
+			return fmt.Errorf(
+				"account [%d] currency mismatch: %s vs %s",
+				acc1.ID, acc1.Currency, acc2.Currency)
+		}
 
 		result.Transfer, err = q.CreateTransfer(ctx, CreateTransferParams{
 			FromAccountID: arg.FromAccountID,
@@ -100,6 +120,17 @@ func (store *SQLStore) TransferTx(
 		return err
 	})
 	return result, err
+}
+
+func validTransaction(
+	acc *Account, arg *TransferTxParams) error {
+	if acc.Owner != arg.Username {
+		return errors.New("account doesn't belong to the sender")
+	}
+	if acc.Balance-arg.Amount < 0 {
+		return fmt.Errorf("no enough balance")
+	}
+	return nil
 }
 
 func addMoney(ctx context.Context,

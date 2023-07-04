@@ -29,8 +29,9 @@ func createRandomTransfer(t *testing.T, acc1, acc2 Account) Transfer {
 }
 
 func TestCreateTransfer(t *testing.T) {
-	acc1 := createRandomAccount(t)
-	acc2 := createRandomAccount(t)
+	currency := util.RandomCurrency()
+	acc1 := createRandomAccount(t, currency)
+	acc2 := createRandomAccount(t, currency)
 	createRandomTransfer(t, acc1, acc2)
 }
 
