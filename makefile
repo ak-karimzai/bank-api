@@ -9,7 +9,7 @@ db_string := "host=${host} \
 							password=${password} \
 							dbname=${database} \
 							sslmode=disable"
-db_container_name := bank-api
+db_container_name := bank-api-db
 FileName ?= none
 
 start_container:
@@ -19,7 +19,7 @@ stop_container:
 	sudo docker start ${db_container_name}
 
 postgres:
-	sudo docker run --name ${db_container_name} -p 5432:5432 -e POSTGRES_USER=${username} -e POSTGRES_PASSWORD=${password} -e POSTGRES_DB=${database} -d postgres:14-alpine
+	sudo docker run --name ${db_container_name} --network=bank-network -p 5432:5432 -e POSTGRES_USER=${username} -e POSTGRES_PASSWORD=${password} -e POSTGRES_DB=${database} -d postgres:14-alpine
 
 create_db:
 	sudo docker exec -it ${db_container_name} \

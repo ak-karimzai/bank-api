@@ -23,6 +23,7 @@ func NewAccountHandler(accountRepo repository.AccountRepository) *AccountHandler
 type CreateAccountReq struct {
 	Owner    string      `json:"owner" binding:"required"`
 	Currency db.Currency `json:"currency" binding:"required"`
+	Balance  int64       `json:"balance" binding:"min=0"`
 }
 
 func (accHandler *AccountHandler) CreateAccount(ctx *gin.Context) {
@@ -34,7 +35,7 @@ func (accHandler *AccountHandler) CreateAccount(ctx *gin.Context) {
 
 	arg := db.CreateAccountParams{
 		Owner:    req.Owner,
-		Balance:  0,
+		Balance:  req.Balance,
 		Currency: req.Currency,
 	}
 	acc, err := accHandler.accountRepo.CreateAccount(ctx, arg)
