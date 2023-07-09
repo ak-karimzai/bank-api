@@ -9,20 +9,28 @@ import (
 	"github.com/ak-karimzai/bank-api/internel/token"
 	"github.com/ak-karimzai/bank-api/internel/util"
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
 	"golang.org/x/crypto/bcrypt"
 )
 
 type UserHandler struct {
-	userRepo   repository.UserRepository
-	tokenMaker token.Maker
-	config     *util.Config
+	userRepo    repository.UserRepository
+	sessionRepo repository.SessionRepository
+	tokenMaker  token.Maker
+	config      *util.Config
 }
 
-func NewUserHandler(userRepo repository.UserRepository, tokenMaker token.Maker, config *util.Config) *UserHandler {
+func NewUserHandler(
+	userRepo repository.UserRepository,
+	sessionRepo repository.SessionRepository,
+	tokenMaker token.Maker,
+	config *util.Config,
+) *UserHandler {
 	return &UserHandler{
-		userRepo:   userRepo,
-		tokenMaker: tokenMaker,
-		config:     config,
+		userRepo:    userRepo,
+		sessionRepo: sessionRepo,
+		tokenMaker:  tokenMaker,
+		config:      config,
 	}
 }
 
@@ -46,8 +54,8 @@ func newUserResponse(user db.User) UserReponse {
 		Username:     user.Username,
 		FullName:     user.FullName,
 		Email:        user.Email,
-		PwdChangedAt: user.PwdChangedAt.Time,
-		CreatedAt:    user.CreatedAt.Time,
+		PwdChangedAt: user.PwdChangedAt,
+		CreatedAt:    user.CreatedAt,
 	}
 }
 
@@ -88,8 +96,12 @@ type LoginUserRequest struct {
 }
 
 type LoginUserResponse struct {
-	AccessToken string      `json:"access_token"`
-	User        UserReponse `json:"user"`
+	SessionID             uuid.UUID   `json:"session_id"`
+	AccessToken           string      `json:"access_token"`
+	AccessTokenExpiresAt  time.Time   `json:"access_token_expires_at"`
+	RefreshToken          string      `json:"refresh_token"`
+	RefreshTokenExpiresAt time.Time   `json:"refresh_token_expires_at"`
+	User                  UserReponse `json:"user"`
 }
 
 func (userHandler *UserHandler) LoginUser(
@@ -113,16 +125,43 @@ func (userHandler *UserHandler) LoginUser(
 		return
 	}
 
-	accessToken, err := userHandler.tokenMaker.CreateToken(
+	accessToken, accessPayload, err := userHandler.tokenMaker.CreateToken(
 		req.Username, userHandler.config.AccessTokenDuration)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, errResponse(err))
 		return
 	}
 
+	refreshToken, refreshPayload, err := userHandler.tokenMaker.CreateToken(
+		req.Username, userHandler.config.RefreshTokenDuration)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, errResponse(err))
+		return
+	}
+
+	session, err := userHandler.sessionRepo.CreateSession(ctx, db.CreateSessionParams{
+		ID:           refreshPayload.ID,
+		Username:     user.Username,
+		RefreshToken: refreshToken,
+		UserAgent:    ctx.Request.UserAgent(),
+		ClientIp:     ctx.ClientIP(),
+		IsBlocked:    false,
+		ExpiresAt:    refreshPayload.ExpiredAt,
+	})
+
+	if err != nil {
+		ctx.JSON(
+			http.StatusInternalServerError, errResponse(err))
+		return
+	}
+
 	rsp := LoginUserResponse{
-		AccessToken: accessToken,
-		User:        newUserResponse(user),
+		SessionID:             session.ID,
+		AccessToken:           accessToken,
+		AccessTokenExpiresAt:  accessPayload.ExpiredAt,
+		RefreshToken:          refreshToken,
+		RefreshTokenExpiresAt: refreshPayload.ExpiredAt,
+		User:                  newUserResponse(user),
 	}
 	ctx.JSON(http.StatusOK, rsp)
 }

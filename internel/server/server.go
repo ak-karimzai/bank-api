@@ -20,6 +20,7 @@ type Server struct {
 	AccountHandler  *handlers.AccountHandler
 	TransferHandler *handlers.TransferHandler
 	UserHandler     *handlers.UserHandler
+	SessionHandler  *handlers.SessionHandler
 	Router          *gin.Engine
 	Config          util.Config
 	TokenMaker      token.Maker
@@ -34,7 +35,8 @@ func NewServer(config util.Config, store db.Store) (*Server, error) {
 	server := &Server{
 		AccountHandler:  handlers.NewAccountHandler(store),
 		TransferHandler: handlers.NewTransferHandler(store),
-		UserHandler:     handlers.NewUserHandler(store, tokenMaker, &config),
+		UserHandler:     handlers.NewUserHandler(store, store, tokenMaker, &config),
+		SessionHandler:  handlers.NewSessionHandler(store, tokenMaker, &config),
 		Config:          config,
 		TokenMaker:      tokenMaker,
 	}
@@ -53,6 +55,7 @@ func (server *Server) setupRouter() {
 
 	router.POST("/users", server.UserHandler.CreateUser)
 	router.POST("/users/login", server.UserHandler.LoginUser)
+	router.POST("/token/renew_access", server.SessionHandler.RenewAccessToken)
 
 	authRouts := router.Group("/").Use(
 		middlewares.AuthMiddleware(server.TokenMaker))

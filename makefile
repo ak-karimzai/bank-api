@@ -10,6 +10,7 @@ db_string := "host=${host} \
 							dbname=${database} \
 							sslmode=disable"
 db_container_name := bank-api-db
+db_doc_filename := diagram.dbml
 FileName ?= none
 
 start_container:
@@ -46,6 +47,12 @@ test:
 
 server:
 	go run cmd/web/main.go
+
+db_docs:
+	dbdocs build docs/${db_doc_filename}
+
+db_schema:
+	dbml2sql --postgres -o docs/schema.sql docs/${db_doc_filename}
 
 mock:
 	mockgen -package mockdb -destination=internel/db/mock/store.go github.com/ak-karimzai/bank-api/internel/db Store

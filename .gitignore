@@ -22,3 +22,4 @@ go.work
 
 # vscode configs
 .vscode
+*error.log

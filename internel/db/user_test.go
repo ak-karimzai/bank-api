@@ -52,7 +52,7 @@ func TestGetUser(t *testing.T) {
 	require.Equal(t, user.FullName, user2.FullName)
 	require.Equal(t, user.Email, user2.Email)
 	require.WithinDuration(t,
-		user.CreatedAt.Time,
-		user2.CreatedAt.Time,
+		user.CreatedAt,
+		user2.CreatedAt,
 		time.Second)
 }
