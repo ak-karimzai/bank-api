@@ -29,8 +29,9 @@ func createRandomTransfer(t *testing.T, acc1, acc2 Account) Transfer {
 }
 
 func TestCreateTransfer(t *testing.T) {
-	acc1 := createRandomAccount(t)
-	acc2 := createRandomAccount(t)
+	currency := util.RandomCurrency()
+	acc1 := createRandomAccount(t, currency)
+	acc2 := createRandomAccount(t, currency)
 	createRandomTransfer(t, acc1, acc2)
 }
 
@@ -48,8 +49,8 @@ func TestGetTransfer(t *testing.T) {
 	require.Equal(t, transfer1.ToAccountID, transfer2.ToAccountID)
 	require.Equal(t, transfer1.Amount, transfer2.Amount)
 	require.WithinDuration(t,
-		transfer1.CreatedAt.Time,
-		transfer2.CreatedAt.Time,
+		transfer1.CreatedAt,
+		transfer2.CreatedAt,
 		time.Second)
 }
 

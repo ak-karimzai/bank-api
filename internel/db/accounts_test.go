@@ -9,11 +9,17 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func createRandomAccount(t *testing.T) Account {
+func createRandomAccount(t *testing.T, currency ...string) Account {
+	selectedCurrency := util.RandomCurrency()
+	if len(currency) > 0 {
+		selectedCurrency = currency[0]
+	}
+
+	user := createRandomUser(t)
 	arg := CreateAccountParams{
-		Owner:    util.RandomOwner(),
+		Owner:    user.Username,
 		Balance:  util.RandomMoney(),
-		Currency: Currency(util.RandomCurrency()),
+		Currency: Currency(selectedCurrency),
 	}
 
 	account, err := testQueries.
@@ -48,8 +54,8 @@ func TestGetAccount(t *testing.T) {
 	require.Equal(t, acc1.Currency, acc2.Currency)
 	require.Equal(t, acc1.Balance, acc2.Balance)
 	require.WithinDuration(t,
-		acc1.CreatedAt.Time,
-		acc2.CreatedAt.Time,
+		acc1.CreatedAt,
+		acc2.CreatedAt,
 		time.Second)
 }
 
@@ -85,21 +91,24 @@ func TestDeleteAccount(t *testing.T) {
 }
 
 func TestListAccounts(t *testing.T) {
+	var lastAccount Account
 	for i := 0; i < 10; i++ {
-		createRandomAccount(t)
+		lastAccount = createRandomAccount(t)
 	}
 
 	arg := ListAccountsParams{
 		Limit:  5,
-		Offset: 5,
+		Offset: 0,
+		Owner:  lastAccount.Owner,
 	}
 
 	accounts, err := testQueries.
 		ListAccounts(context.Background(), arg)
 	require.NoError(t, err)
-	require.Len(t, accounts, 5)
+	require.NotEmpty(t, accounts)
 
 	for _, account := range accounts {
-		require.NotZero(t, account.ID)
+		require.NotEmpty(t, account)
+		require.Equal(t, lastAccount.Owner, account.Owner)
 	}
 }
