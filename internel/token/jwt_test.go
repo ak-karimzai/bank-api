@@ -34,7 +34,8 @@ func TestJWTMakerWrongToken(t *testing.T) {
 	token, _, err := maker.CreateToken(username, time.Minute)
 	require.NoError(t, err)
 
-	randomToken := token[:len(token)-1] + util.RandomString(1)
+	lastByte := byte(token[len(token)-1]) + 1
+	randomToken := token[:len(token)-2] + string(lastByte)
 	payload, err := maker.VerifyToken(randomToken)
 	require.Error(t, err)
 	require.Nil(t, payload)
