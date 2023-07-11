@@ -9,6 +9,9 @@ import (
 )
 
 func TestTransferTx(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
 	store := NewStore(testDb)
 
 	currency := util.RandomCurrency()
@@ -104,6 +107,9 @@ func TestTransferTx(t *testing.T) {
 }
 
 func TestTransferTxDeadlock(t *testing.T) {
+	if testing.Short() {
+		t.Skip()
+	}
 	store := NewStore(testDb)
 
 	currency := util.RandomCurrency()
