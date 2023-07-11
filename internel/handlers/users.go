@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/ak-karimzai/bank-api/internel/db"
+	errorhandler "github.com/ak-karimzai/bank-api/internel/error_handler"
 	"github.com/ak-karimzai/bank-api/internel/repository"
 	"github.com/ak-karimzai/bank-api/internel/token"
 	"github.com/ak-karimzai/bank-api/internel/util"
@@ -81,8 +82,8 @@ func (UserHandler *UserHandler) CreateUser(ctx *gin.Context) {
 
 	user, err := UserHandler.userRepo.CreateUser(ctx, arg)
 	if err != nil {
-		finalErr := dbErrorHandler(err)
-		ctx.JSON(finalErr.Status, finalErr)
+		finalErr := errorhandler.DbErrorHandler(err)
+		ctx.JSON(toHttpError(finalErr), finalErr)
 		return
 	}
 
@@ -114,8 +115,8 @@ func (userHandler *UserHandler) LoginUser(
 
 	user, err := userHandler.userRepo.GetUser(ctx, req.Username)
 	if err != nil {
-		finalErr := dbErrorHandler(err)
-		ctx.JSON(finalErr.Status, finalErr)
+		finalErr := errorhandler.DbErrorHandler(err)
+		ctx.JSON(toHttpError(finalErr), finalErr)
 		return
 	}
 

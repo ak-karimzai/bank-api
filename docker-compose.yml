@@ -10,6 +10,8 @@ services:
     #   - 5432:5432
     # volumes:
     #   - postgres:/var/lib/postgresql/data
+  redis:
+    image: redis:7.0-alpine
 
   api:
     build:
@@ -17,9 +19,12 @@ services:
       dockerfile: Dockerfile
     ports:
       - 8080:8080
+      - 9090:9090
     environment:
       DB_SOURCE: "host=postgres port=5432 user=postgres password=postgres dbname=bank-api sslmode=disable"
+      REDIS_ADDRESS: "redis:6379"
     depends_on:
       - postgres
-    entrypoint: [ "/app/wait-for.sh", "postgres:5432", "--", "/app/start.sh" ]
+      - redis
+    entrypoint: [ "/app/wait-for.sh", "postgres:5432", "--", "/app/wait-for.sh", "redis:6379", "--", "/app/start.sh" ]
     command: [ "/app/bank-api"]

@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/ak-karimzai/bank-api/internel/db"
+	errorhandler "github.com/ak-karimzai/bank-api/internel/error_handler"
 	"github.com/ak-karimzai/bank-api/internel/middlewares"
 	"github.com/ak-karimzai/bank-api/internel/repository"
 	"github.com/gin-gonic/gin"
@@ -40,8 +41,8 @@ func (accHandler *AccountHandler) CreateAccount(ctx *gin.Context) {
 	}
 	acc, err := accHandler.accountRepo.CreateAccount(ctx, arg)
 	if err != nil {
-		finalErr := dbErrorHandler(err)
-		ctx.JSON(finalErr.Status, finalErr)
+		finalErr := errorhandler.DbErrorHandler(err)
+		ctx.JSON(toHttpError(finalErr), finalErr)
 		return
 	}
 
@@ -62,8 +63,8 @@ func (accHandler *AccountHandler) GetAccount(ctx *gin.Context) {
 	payload := middlewares.GetPayload(ctx)
 	acc, err := accHandler.accountRepo.GetAccount(ctx, req.ID)
 	if err != nil {
-		finalErr := dbErrorHandler(err)
-		ctx.JSON(finalErr.Status, finalErr)
+		finalErr := errorhandler.DbErrorHandler(err)
+		ctx.JSON(toHttpError(finalErr), finalErr)
 		return
 	}
 
@@ -97,8 +98,8 @@ func (accHandler *AccountHandler) ListAccounts(ctx *gin.Context) {
 
 	acc, err := accHandler.accountRepo.ListAccounts(ctx, arg)
 	if err != nil {
-		finalErr := dbErrorHandler(err)
-		ctx.JSON(finalErr.Status, finalErr)
+		finalErr := errorhandler.DbErrorHandler(err)
+		ctx.JSON(toHttpError(finalErr), finalErr)
 		return
 	}
 	ctx.JSON(http.StatusOK, acc)

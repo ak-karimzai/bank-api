@@ -4,6 +4,7 @@ import (
 	"net/http"
 
 	"github.com/ak-karimzai/bank-api/internel/db"
+	errorhandler "github.com/ak-karimzai/bank-api/internel/error_handler"
 	"github.com/ak-karimzai/bank-api/internel/middlewares"
 	"github.com/ak-karimzai/bank-api/internel/repository"
 	"github.com/gin-gonic/gin"
@@ -41,8 +42,8 @@ func (transferHandler *TransferHandler) CreateTransfer(ctx *gin.Context) {
 	}
 	result, err := transferHandler.transferRepo.TransferTx(ctx, arg)
 	if err != nil {
-		finalErr := dbErrorHandler(err)
-		ctx.JSON(finalErr.Status, finalErr)
+		finalErr := errorhandler.DbErrorHandler(err)
+		ctx.JSON(toHttpError(finalErr), finalErr)
 		return
 	}
 

@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"time"
 
+	errorhandler "github.com/ak-karimzai/bank-api/internel/error_handler"
 	"github.com/ak-karimzai/bank-api/internel/repository"
 	"github.com/ak-karimzai/bank-api/internel/token"
 	"github.com/ak-karimzai/bank-api/internel/util"
@@ -56,8 +57,8 @@ func (sessionHandler *SessionHandler) RenewAccessToken(
 	session, err := sessionHandler.sessionRepo.
 		GetSession(ctx, refreshPayload.ID)
 	if err != nil {
-		finalErr := dbErrorHandler(err)
-		ctx.JSON(finalErr.Status, finalErr)
+		finalErr := errorhandler.DbErrorHandler(err)
+		ctx.JSON(toHttpError(finalErr), finalErr)
 		return
 	}
 
